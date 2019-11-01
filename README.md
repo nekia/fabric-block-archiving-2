@@ -1,4 +1,4 @@
-# Hyperledger Fabric Block Archiving
+# Hyperledger Fabric Block Archiving Test
 
 This enhancement for Hyperledger Fabric is aiming to:
 * Reduce the total amount of storage space required for an organisation to operate a Hyperledger Fabric network by archiving block data into repository.

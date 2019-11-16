@@ -86,10 +86,11 @@ are not released officially for ARM8 (64bit) architecture.
 
 * Build
 	```
-	make
+	make docker
 	```
 
 ## Build fabric-peer for ARM8 (64bit) architecture
 
 Now you can build the block archiving enabled fabric-peer container image on your Raspberry Pi. Just follow the steps mentioned [here](README.md#setting-up-the-development-environment)
-
+Add a step for building native command
+Add swap(1GB)

@@ -52,6 +52,23 @@ hyperledger/fabric-peer               amd64-2.0.0-alpha-snapshot-ea48f79   5b05d
 hyperledger/fabric-peer               amd64-blkarchiver                    5b05d8d79382        2 hours ago         48.1MB
 hyperledger/fabric-peer               latest                               5b05d8d79382        2 hours ago         48.1MB
 ```
+
+### Building native binaries
+
+There is no prebuild binaries for '2.0.0-alpha' officially. So you also need to build them on your local.
+
+```
+vagrant@ubuntu:~/go/src/github.com/hyperledger/fabric$ make native
+vagrant@ubuntu:~/go/src/github.com/hyperledger/fabric$ ls .build/bin/
+configtxgen  configtxlator  cryptogen  discover  idemixgen  ledgerfsck  orderer  peer  token
+```
+
+And you need to the above 'bin' directory to your PATH environment variable.
+
+```
+vagrant@ubuntu:~/go/src/github.com/hyperledger/fabric$ export PATH=$PWD/.build/bin:$PATH
+```
+
 ----
 ## Looking at how to work
 
@@ -65,21 +82,6 @@ vagrant@ubuntu:~$ cd ~/dev
 vagrant@ubuntu:~/dev$ git clone https://github.com/nekia/fabric-block-archiving-testenv.git
 vagrant@ubuntu:~/dev$ cd fabric-block-archiving-testenv
 ```
-
-### Download Hyperledger Fabric platform-specific binaries
-
-In the following demo, a simple Hyperledger Fabric network is actually deployed on your local environment. It's based on fabric-samples/first-network example. You need to download some binaries required for that.
-
-```
-vagrant@ubuntu:~/dev/fabric-block-archiving-testenv$ curl -sSL http://bit.ly/2ysbOFE | bash -s -- 2.0.0-alpha 2.0.0-alpha 0.4.15 -s -d
-```
-* You need to bypass docker image download(-d) and fabric-samples repo clone(-s)
-* If you would download docker image by mistake, it would override image tag of fabric-peer container image which is built for Block Archiving feature with the original one. In that case, you need to assign tag manually as below:
-
-  ```
-  vagrant@ubuntu:~/dev/fabric-block-archiving-testenv$ docker tag hyperledger/fabric-peer:amd64-blkarchiver hyperledger/fabric-peer:2.0.0-alpha
-  vagrant@ubuntu:~/dev/fabric-block-archiving-testenv$ docker tag hyperledger/fabric-peer:amd64-blkarchiver hyperledger/fabric-peer:latest
-  ```
 
 ### Clean up 
 

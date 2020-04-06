@@ -105,6 +105,7 @@ var (
 	verifyChannel string
 	dumpMetadata  bool
 	pInstance     *peer.Peer
+	txId          string
 )
 
 const (
@@ -115,19 +116,54 @@ const (
 
 var chaincodeDevMode bool
 
-func startCmd() *cobra.Command {
+func ledgerCmd() *cobra.Command {
 	// Set the flags on the node start command.
-	flags := nodeStartCmd.Flags()
+	flags := verifyLedgerCmd.Flags()
 	flags.StringVarP(&verifyChannel, "channelID", "c", "", "In case of a newChain command, the channel ID to create. It must be all lower case, less than 250 characters long and match the regular expression: [a-z][a-z0-9.-]*")
 	flags.BoolVarP(&dumpMetadata, "dumpMeta", "d", false, "Dump metadata in each block")
 
-	return nodeStartCmd
+	return verifyLedgerCmd
 }
 
-var nodeStartCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Starts the node.",
-	Long:  `Starts a node that interacts with the network.`,
+func txCmd() *cobra.Command {
+	// Set the flags on the node start command.
+	flags := verifyTxCmd.Flags()
+	flags.StringVarP(&verifyChannel, "channelID", "c", "", "In case of a newChain command, the channel ID to create. It must be all lower case, less than 250 characters long and match the regular expression: [a-z][a-z0-9.-]*")
+	flags.StringVarP(&txId, "txid", "t", "", "Transaction ID")
+
+	return verifyTxCmd
+}
+
+var verifyTxCmd = &cobra.Command{
+	Use:   "tx",
+	Short: "Verify transaction data",
+	Long:  `Verify transaction data`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(verifyChannel) == 0 {
+			return fmt.Errorf("Need to specify channel ID")
+		}
+		// Parsing of the command line is done so silence cmd usage
+		cmd.SilenceUsage = true
+		waitStartPeer := make(chan bool)
+		go func(args []string, waitStartCh chan<- bool) {
+			serve(args, waitStartCh)
+		}(args, waitStartPeer)
+
+		if <-waitStartPeer {
+			if waitForStateInfo(pInstance, verifyChannel) {
+				GetTx(verifyChannel, txId)
+			} else {
+				logger.Info("Not found any peers in the channel")
+			}
+		}
+		return nil
+	},
+}
+
+var verifyLedgerCmd = &cobra.Command{
+	Use:   "ledger",
+	Short: "Verify block data ",
+	Long:  `Verify block data consistency across the ledger.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(verifyChannel) == 0 {
 			return fmt.Errorf("Need to specify channel ID")
@@ -1478,6 +1514,16 @@ func DumpMeta(channelID string) {
 		logger.Infof("dump result:")
 		loggerResult.Info(buff.String())
 		loggerResult.Info(dumpLedger.DumpBlockInfo(blockIndex))
+	}
+}
+
+func GetTx(channelID string, txid string) {
+	ledger := pInstance.GetLedger(channelID)
+	txdata, err := ledger.GetTransactionByID(txid)
+	if err != nil {
+		logger.Error("Failed to get txdata", err)
+	} else {
+		logger.Info("txdata:", txdata.String)
 	}
 }
 

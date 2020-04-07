@@ -27,10 +27,6 @@ type blockfileArchiver struct {
 	mgr *blockfileMgr
 	// PATH to where blockfiles are stored on the local file system
 	blockfileDir string
-	// Postfix number of the blockfile which should be archived next
-	nextBlockfileNum int
-	// Height of discarded block on the local ledger
-	currDiscardedBlockHeigh uint64
 }
 
 const (
@@ -46,7 +42,7 @@ func newBlockArchivingRoutine(id string, mgr *blockfileMgr) *blockfileArchiver {
 	loggerArchiveCmn.Info("newBlockArchivingRoutine: ", id)
 
 	blockfileDir := filepath.Join(blockarchive.BlockStorePath, ChainsDir, id)
-	arch := &blockfileArchiver{id, mgr, blockfileDir, 1, 0}
+	arch := &blockfileArchiver{id, mgr, blockfileDir}
 
 	if blockarchive.IsArchiver || blockarchive.IsClient {
 		loggerArchiveCmn.Info("newBlockArchivingRoutine - creating channel to notify the finalizing of each blockfile...")
@@ -100,7 +96,7 @@ func (arch *blockfileArchiver) discardBlockfilelIfNecessary() {
 	loggerArchiveClient.Infof("discardBlockfilelIfNecessary [%s]", arch.chainID)
 
 	// get last archived block number from state info
-	currentArchivedBlockHeigh := blockarchive.GossipService.ReadArchivedBlockHeight(common.ChannelID(arch.chainID))
+	currentArchivedBlockHeight := blockarchive.GossipService.ReadArchivedBlockHeight(common.ChannelID(arch.chainID))
 
 	// get last archived blockfile num
 	var discardedBlockfileSuffix uint64
@@ -124,10 +120,10 @@ func (arch *blockfileArchiver) discardBlockfilelIfNecessary() {
 	currentBlockHeight := arch.mgr.getBlockchainInfo().Height
 
 	loggerArchiveClient.Infof("current ledger:%d  vs  current archived block:%d  vs  block discard next:%d ( keep:%d )",
-		currentBlockHeight, currentArchivedBlockHeigh, nextEndBlockNum, numKeepLatestBlocks)
+		currentBlockHeight, currentArchivedBlockHeight, nextEndBlockNum, numKeepLatestBlocks)
 
 	var newDiscardedBlockfileSuffix uint64
-	for currentArchivedBlockHeigh > nextEndBlockNum && (currentBlockHeight-nextEndBlockNum) > numKeepLatestBlocks {
+	for currentArchivedBlockHeight > nextEndBlockNum && (currentBlockHeight-nextEndBlockNum) > numKeepLatestBlocks {
 		loggerArchiveClient.Infof("discarding blockfile_%06d (end with block #%d)", nextDiscardedBlockfileSuffix, nextEndBlockNum)
 		if !arch.hasConfigBlockInBlockfile(nextDiscardedBlockfileSuffix) {
 			// Delete nextDiscardedBlockfileSuffix
@@ -238,40 +234,6 @@ func (arch *blockfileArchiver) archiveBlockfilelIfNecessary() {
 
 }
 
-// archiveBlockfile sends a blockfile to the Block Archiver repository and deletes it if required
-func (arch *blockfileArchiver) archiveBlockfile(fileNum int, deleteTheFile bool) (bool, error) {
-
-	loggerArchive.Info("Archiving: archiveBlockfile  deleteTheFile=", deleteTheFile)
-
-	// Send the blockfile to the repository
-	if alreadyArchived, err := sendBlockfileToRepo(arch.blockfileDir, fileNum); err != nil && alreadyArchived == false {
-		loggerArchive.Error(err)
-		return alreadyArchived, err
-	} else if alreadyArchived == true {
-		loggerArchive.Infof("[blockfile_%06d] Already archived. Skip...", fileNum)
-		return alreadyArchived, nil
-	}
-
-	// Record the fact that the blockfile has been archived, and delete it locally if required
-	if err := arch.SetBlockfileArchived(fileNum, deleteTheFile); err != nil {
-		loggerArchive.Error(err)
-		return false, err
-	}
-
-	return false, nil
-}
-
-// SetBlockfileArchived deletes a blockfile and records it as having been archived
-func (arch *blockfileArchiver) SetBlockfileArchived(blockFileNo int, deleteTheFile bool) error {
-	loggerArchiveCmn.Info("blockfileArchiver.SetBlockfileArchived... blockFileNo = ", blockFileNo)
-
-	if blockarchive.IsClient || blockarchive.IsArchiver {
-		arch.handleArchivedBlockfile(blockFileNo, deleteTheFile)
-	}
-
-	return nil
-}
-
 // handleArchivedBlockfile - Called once a blockfile has been archived
 func (arch *blockfileArchiver) handleArchivedBlockfile(fileNum int, deleteTheFile bool) error {
 
@@ -299,27 +261,4 @@ func (arch *blockfileArchiver) deleteArchivedBlockfile(fileNum int) error {
 	loggerArchiveCmn.Info("deleteArchivedBlockfile - deleted local blockfile: ", fileNum)
 
 	return nil
-}
-
-// isNeedArchiving - returns whether archiving should be triggered or not
-func (arch *blockfileArchiver) isNeedArchiving() bool {
-
-	var archivedBlockHeight uint64
-	var err error
-	// Retrieve current archived block height from index DB
-	if archivedBlockHeight, err = arch.mgr.index.getLastArchivedBlockIndexed(); err != nil {
-		loggerArchive.Error("Failed to get last archived block number")
-		return false
-	}
-
-	// Retrieve current ledger height from blockfile manager
-	currentBlockHeight := arch.mgr.getBlockchainInfo().Height
-
-	numKeepLatestBlocks := blockarchive.NumKeepLatestBlocks
-	loggerArchive.Infof("ledger height : %d  vs  last archived block : %d", currentBlockHeight, archivedBlockHeight)
-	if currentBlockHeight-archivedBlockHeight > uint64(numKeepLatestBlocks) {
-		return true
-	} else {
-		return false
-	}
 }

@@ -782,7 +782,7 @@ func (gc *gossipChannel) processArchiverNotification(si *proto.StateInfo, sender
 	orgID := gc.GetOrgOfPeer(si.PkiId)
 	gc.logger.Infof("archivedBlockHeight[%d]  sender[%s]  orgID[%s]  selfOrg[%s]", si.Properties.ArchivedBlockHeight, sender.String(), string(orgID), string(gc.selfOrg))
 	if si.Properties.ArchivedBlockHeight > 0 && bytes.Equal(orgID, gc.selfOrg) {
-		gc.logger.Infof("Update archived block heigh %d based the notification from %s", si.Properties.ArchivedBlockHeight, sender.String())
+		gc.logger.Infof("Update archived block height %d based the notification from %s", si.Properties.ArchivedBlockHeight, sender.String())
 	}
 }
 

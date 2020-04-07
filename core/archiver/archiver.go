@@ -33,8 +33,6 @@ func initBlockArchiverParams(gossipService *service.GossipService) {
 		blockarchive.IsClient = viper.GetBool("peer.archiving.enabled")
 	}
 
-	blockarchive.BlockArchiverDir = ledgerconfig.GetBlockArchiverDir()
-	blockarchive.BlockArchiverURL = ledgerconfig.GetBlockArchiverURL()
 	blockarchive.BlockStorePath = ledgerconfig.GetBlockStorePath()
 	blockarchive.GossipService = gossipService
 

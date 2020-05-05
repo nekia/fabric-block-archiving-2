@@ -29,6 +29,8 @@ jobs:
   - script: |
             make peer-docker
             make native
+            docker pull hyperledger/fabric-ca:1.4.6
+            docker tag hyperledger/fabric-ca:1.4.6 hyperledger/fabric-ca:2.0.1
     workingDirectory: '$(Pipeline.Workspace)/go/src/github.com/hyperledger/fabric'
 
   - script: |

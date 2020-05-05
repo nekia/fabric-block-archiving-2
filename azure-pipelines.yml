@@ -28,13 +28,12 @@ jobs:
 
   - script: |
             make peer-docker
-            make configtxgen
-            make cryptogen
+            make native
     workingDirectory: '$(Pipeline.Workspace)/go/src/github.com/hyperledger/fabric'
 
   - script: |
             cd e2e-test
             pip install -r requirements.txt
-            export PATH=$(Pipeline.Workspace)/go/src/github.com/hyperledger/fabric/.build/bin:$PATH
+            export PATH=$(Pipeline.Workspace)/go/src/github.com/hyperledger/fabric/build/bin:$PATH
             ./runTestSuite.sh
     workingDirectory: '$(Pipeline.Workspace)/dev/fabric-block-archiving-testenv'
